@@ -6,7 +6,7 @@ A simple application to download videos using the `youtube-dl` utility.
 Baby steps:
 
 - [x] CLI to download videos, sync
-- [ ] Separate CLI and server with web API, download videos sync
+- [x] Separate CLI and server with web API, download videos sync
 - [ ] Download async, add web API to query queue status
 - [ ] Add simple web interface, without showing downloads in progress
 - [ ] Use the original title as filename by default, make filename optional
@@ -30,8 +30,8 @@ Web API
 
 (draft)
 
-`POST /api/download?url=:url&filename=:filename`
+`POST /api/v1/download?url=:url&filename=:filename`
 
-`GET /api/search/downloaded`
+`GET /api/v1/search/downloaded`
 
-`GET /api/search/queue`
+`GET /api/v1/search/queue`
