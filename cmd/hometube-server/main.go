@@ -53,6 +53,27 @@ func parseArgs() params {
 	}
 }
 
+type queue struct {
+	items chan *file
+}
+
+func newQueue() *queue {
+	return &queue{items: make(chan *file, 1)}
+}
+
+func worker(downloader hometube.Downloader, basedir string, q *queue) {
+	for f := range q.items {
+		log.Printf("worker: processing file: %s", f)
+		target := filepath.Join(basedir, f.Filename)
+		err := downloader.Download(f.URL, target)
+		if err != nil {
+			log.Printf("failed to download %s to %s", f.URL, target)
+		} else {
+			log.Printf("successfully downloaded %s to %s", f.URL, target)
+		}
+	}
+}
+
 func writeResponse(w http.ResponseWriter, obj interface{}) {
 	bytes, err := json.Marshal(obj)
 	if err != nil {
@@ -71,22 +92,17 @@ type file struct {
 }
 
 type server struct {
-	downloader hometube.Downloader
-	basedir    string
+	queue queue
 }
 
 func (s *server) download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	url := r.FormValue("url")
 	filename := r.FormValue("filename")
-	target := filepath.Join(s.basedir, filename)
-	err := s.downloader.Download(url, target)
-	if err != nil {
-		writeResponse(w, &message{Message: err.Error()})
-	} else {
-		w.WriteHeader(http.StatusCreated)
-		writeResponse(w, &file{URL: url, Filename: filename})
-	}
+	f := &file{URL: url, Filename: filename}
+	s.queue.items <- f
+	w.WriteHeader(http.StatusCreated)
+	writeResponse(w, f)
 }
 
 func main() {
@@ -97,10 +113,12 @@ func main() {
 	}
 
 	args := parseArgs()
-	s := &server{
-		downloader: downloader,
-		basedir:    args.basedir,
-	}
+
+	q := newQueue()
+
+	go worker(downloader, args.basedir, q)
+
+	s := &server{queue: *q}
 
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()

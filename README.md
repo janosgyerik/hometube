@@ -7,9 +7,10 @@ Baby steps:
 
 - [x] CLI to download videos, sync
 - [x] Separate CLI and server with web API, download videos sync
-- [ ] Download async, add web API to query queue status
+- [x] Download async
 - [ ] Add simple web interface, without showing downloads in progress
 - [ ] Use the original title as filename by default, make filename optional
+- [ ] Add web API to query queue status
 - [ ] Show download progress (= file size)
 
 Command line interface
@@ -24,6 +25,8 @@ Examples:
     go install
     hometube -help
     hometube 'https://www.youtube.com/watch?v=H0FcOPb-9rE' blofeld.avi
+
+    curl -sX POST 'localhost:8080/api/v1/download?url=https://www.youtube.com/watch?v=H0FcOPb-9rE&filename=blofeld.avi' | jq .
 
 Web API
 -------
