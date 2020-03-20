@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +15,11 @@ import (
 	"github.com/janosgyerik/hometube"
 )
 
+const (
+	defaultBasedir = "."
+	defaultPort    = 8080
+)
+
 func exit() {
 	flag.Usage()
 	os.Exit(1)
@@ -21,6 +27,7 @@ func exit() {
 
 type params struct {
 	basedir string
+	port    int
 }
 
 func isDirectory(path string) (bool, error) {
@@ -33,23 +40,26 @@ func isDirectory(path string) (bool, error) {
 
 func parseArgs() params {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [options] basedir\n\n", os.Args[0])
+		fmt.Printf("Usage: %s [options]\n\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
+	portPtr := flag.Int("port", defaultPort, "the port to listen on")
+	basedir := flag.String("basedir", defaultBasedir, "the base directory to download files to")
+
 	flag.Parse()
 
-	if len(flag.Args()) != 1 {
+	if flag.NArg() > 0 {
 		exit()
 	}
 
-	basedir := flag.Args()[0]
-	if ok, _ := isDirectory(basedir); !ok {
-		log.Fatalf("path does not exist or not a directory: %s", basedir)
+	if ok, _ := isDirectory(*basedir); !ok {
+		log.Fatalf("path does not exist or not a directory: %s", *basedir)
 	}
 
 	return params{
-		basedir: basedir,
+		basedir: *basedir,
+		port:    *portPtr,
 	}
 }
 
@@ -91,18 +101,48 @@ type file struct {
 	Filename string `json:"filename"`
 }
 
+type listDownloadedResponse struct {
+	Files []file `json:"files"`
+}
+
 type server struct {
-	queue queue
+	queue   queue
+	basedir string
 }
 
 func (s *server) download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	url := r.FormValue("url")
 	filename := r.FormValue("filename")
 	f := &file{URL: url, Filename: filename}
 	s.queue.items <- f
 	w.WriteHeader(http.StatusCreated)
 	writeResponse(w, f)
+}
+
+func (s *server) listDownloaded(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	osFiles, err := ioutil.ReadDir(s.basedir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files := make([]file, 0)
+	for _, f := range osFiles {
+		files = append(files, file{Filename: f.Name()})
+	}
+	response := listDownloadedResponse{Files: files}
+	w.WriteHeader(http.StatusOK)
+	writeResponse(w, response)
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -118,14 +158,18 @@ func main() {
 
 	go worker(downloader, args.basedir, q)
 
-	s := &server{queue: *q}
+	s := &server{queue: *q, basedir: args.basedir}
 
 	r := mux.NewRouter()
+	r.Use(loggingMiddleware)
 	api := r.PathPrefix("/api/v1").Subrouter()
 	api.HandleFunc("/download", s.download).
 		Methods(http.MethodPost).
 		Queries("url", "{url}").
 		Queries("filename", "{filename}")
+	api.HandleFunc("/list/downloaded", s.listDownloaded).
+		Methods(http.MethodGet)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Printf("Listening on port %d, saving files to directory %s\n", args.port, args.basedir)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", args.port), r))
 }
