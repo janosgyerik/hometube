@@ -97,6 +97,7 @@ type server struct {
 
 func (s *server) download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	url := r.FormValue("url")
 	filename := r.FormValue("filename")
 	f := &file{URL: url, Filename: filename}

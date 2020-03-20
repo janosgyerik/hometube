@@ -9,6 +9,9 @@ Baby steps:
 - [x] Separate CLI and server with web API, download videos sync
 - [x] Download async
 - [ ] Add simple web interface, without showing downloads in progress
+  - Make web server port a parameter
+  - Show list of downloaded files (add web API to provide it)
+  - Serve web UI together with web API, bundled in Go
 - [ ] Use the original title as filename by default, make filename optional
 - [ ] Add web API to query queue status
 - [ ] Show download progress (= file size)
@@ -35,6 +38,6 @@ Web API
 
 `POST /api/v1/download?url=:url&filename=:filename`
 
-`GET /api/v1/search/downloaded`
+`GET /api/v1/list/downloaded`
 
-`GET /api/v1/search/queue`
+`GET /api/v1/list/queue`
