@@ -1,8 +1,14 @@
 <script>
-  var filenames = ["example1.avi", "example2.avi"];
+  import { files } from "./stores.js";
+
+  let items;
+
+  const unsubscribe = files.subscribe(files => {
+    items = files;
+  });
 </script>
 
-{#if filenames.length > 0}
+{#if items.length > 0}
   <main>
     <div class="container">
       <div class="text-center">
@@ -10,8 +16,8 @@
       </div>
 
       <ul class="list-group">
-        {#each filenames as fn}
-          <li class="list-group-item">{fn}</li>
+        {#each items as f}
+          <li class="list-group-item">{f.filename}</li>
         {/each}
       </ul>
     </div>
