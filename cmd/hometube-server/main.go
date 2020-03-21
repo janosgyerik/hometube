@@ -14,6 +14,11 @@ import (
 	"github.com/janosgyerik/hometube"
 )
 
+const (
+	defaultBasedir = "."
+	defaultPort    = 8080
+)
+
 func exit() {
 	flag.Usage()
 	os.Exit(1)
@@ -21,6 +26,7 @@ func exit() {
 
 type params struct {
 	basedir string
+	port    int
 }
 
 func isDirectory(path string) (bool, error) {
@@ -33,23 +39,26 @@ func isDirectory(path string) (bool, error) {
 
 func parseArgs() params {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [options] basedir\n\n", os.Args[0])
+		fmt.Printf("Usage: %s [options]\n\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
+	portPtr := flag.Int("port", defaultPort, "the port to listen on")
+	basedir := flag.String("basedir", defaultBasedir, "the base directory to download files to")
+
 	flag.Parse()
 
-	if len(flag.Args()) != 1 {
+	if flag.NArg() > 0 {
 		exit()
 	}
 
-	basedir := flag.Args()[0]
-	if ok, _ := isDirectory(basedir); !ok {
-		log.Fatalf("path does not exist or not a directory: %s", basedir)
+	if ok, _ := isDirectory(*basedir); !ok {
+		log.Fatalf("path does not exist or not a directory: %s", *basedir)
 	}
 
 	return params{
-		basedir: basedir,
+		basedir: *basedir,
+		port:    *portPtr,
 	}
 }
 
@@ -128,5 +137,6 @@ func main() {
 		Queries("url", "{url}").
 		Queries("filename", "{filename}")
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Printf("Listening on port %d, saving files to directory %s\n", args.port, args.basedir)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", args.port), r))
 }
