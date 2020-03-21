@@ -145,9 +145,17 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func notFound(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s", r.Method, r.RequestURI)
+	w.WriteHeader(http.StatusNotFound)
+}
+
 func home(w http.ResponseWriter, r *http.Request) {
-	// TODO bundle the svelte app
-	// TODO serve the single file / template from svelte app
+	http.ServeFile(w, r, "app/public/index.html")
+}
+
+func servePublicFile(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "app/public/"+r.RequestURI)
 }
 
 func main() {
@@ -167,7 +175,11 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Use(loggingMiddleware)
+	r.NotFoundHandler = http.HandlerFunc(notFound)
 	r.HandleFunc("/home", home).Methods(http.MethodGet)
+	r.HandleFunc("/global.css", servePublicFile).Methods(http.MethodGet)
+	r.HandleFunc("/build/bundle.css", servePublicFile).Methods(http.MethodGet)
+	r.HandleFunc("/build/bundle.js", servePublicFile).Methods(http.MethodGet)
 
 	api := r.PathPrefix("/api/v1").Subrouter()
 	api.HandleFunc("/download", s.download).
