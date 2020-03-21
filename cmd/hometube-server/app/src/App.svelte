@@ -108,7 +108,7 @@
 <body class="bg-light">
   <div class="container">
     <div class="text-center">
-      <h1>HomeTube</h1>
+      <h1>Hometube</h1>
       <p class="lead">
         Download videos from YouTube or other streaming sites using the
         <code>youtube-dl</code>
