@@ -15,6 +15,8 @@ Baby steps:
     - add link to open file, or open basedir in file explorer
     - filename should not contain extension
     - fix all TODOs
+    - drop the /home, make it /
+    - package as Deb that can be installed, started and stopped
 - [ ] Use the original title as filename by default, make filename optional
 - [ ] Add queue content to UI, and periodically query it and update view
 - [ ] Show download progress (= file size)
