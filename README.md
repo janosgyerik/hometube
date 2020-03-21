@@ -9,7 +9,7 @@ Baby steps:
 - [x] Separate CLI and server with web API, download videos sync
 - [x] Download async
 - [ ] Add simple web interface, without showing downloads in progress
-  - Show list of downloaded files (add web API to provide it)
+  - Show list of downloaded files
   - Serve web UI together with web API, bundled in Go
 - [ ] Use the original title as filename by default, make filename optional
 - [ ] Add web API to query queue status
