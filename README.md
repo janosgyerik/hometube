@@ -9,8 +9,12 @@ Baby steps:
 - [x] Separate CLI and server with web API, download videos sync
 - [x] Download async
 - [ ] Add simple web interface, without showing downloads in progress
-  - Show list of downloaded files
   - Serve web UI together with web API, bundled in Go
+- [ ] Clean up and polish
+    - refuse to download if filename exists (beware of .mp4 added by youtube-dl!)
+    - submit form on Enter in any field
+    - add link to open file, or open basedir in file explorer
+    - fix all TODOs
 - [ ] Use the original title as filename by default, make filename optional
 - [ ] Add web API to query queue status
 - [ ] Show download progress (= file size)
@@ -33,10 +37,16 @@ Examples:
 Web API
 -------
 
-(draft)
+User interface: visit `/home` in a browser.
 
-`POST /api/v1/download?url=:url&filename=:filename`
+Request to download a URL and save as a filename asynchronously:
 
-`GET /api/v1/list/downloaded`
+    POST /api/v1/download?url=:url&filename=:filename
 
-`GET /api/v1/list/queue`
+Get the list of downloaded files:
+
+    GET /api/v1/list/downloaded
+
+Get the list of queued downloads (not implemented yet):
+
+    GET /api/v1/list/queue

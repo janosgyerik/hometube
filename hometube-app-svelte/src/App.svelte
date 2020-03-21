@@ -1,13 +1,20 @@
 <script>
   import Files from "./Files.svelte";
+  import { files } from "./stores.js";
+  import { onMount } from "svelte";
 
-  const apiBaseUrl = "http://localhost:8080/api/v1";
+  export let apiBaseUrl;
+
   const requests = {
     download: (videoUrl, videoFilename) => {
       const encodedUrl = encodeURIComponent(videoUrl);
       const encodedFilename = encodeURIComponent(videoFilename);
       const url = `${apiBaseUrl}/download?url=${encodedUrl}&filename=${encodedFilename}`;
       return fetch(url, { method: "POST" });
+    },
+    listDownloaded: () => {
+      const url = `${apiBaseUrl}/list/downloaded`;
+      return fetch(url, { method: "GET" });
     }
   };
 
@@ -23,8 +30,8 @@
       .then(response => response.json())
       .then(json => {
         if (json.url == videoUrl) {
-		  clearForm();
-		  // TODO ensure videoUrl is sanitized, make it pass through URL validation
+          clearForm();
+          // TODO ensure videoUrl is sanitized, make it pass through URL validation
           messages.success.download = `Started downloading <a href="${videoUrl}">${videoUrl}</a> as ${videoFilename}`;
         } else {
           messages.error.download =
@@ -33,6 +40,24 @@
       })
       .catch(err => {
         messages.error.download = `Download failed: ${err}`;
+      });
+  }
+
+  function updateFilesList() {
+    console.log("Updating list of downloaded files...");
+    requests
+      .listDownloaded()
+      .then(response => response.json())
+      .then(json => {
+        if (json.files) {
+          files.update(prev => json.files);
+        } else {
+          messages.error.listDownloaded =
+            "Could not get list of downloaded files";
+        }
+      })
+      .catch(err => {
+        messages.error.listDownloaded = `Could not get list of downloaded files: ${err}`;
       });
   }
 
@@ -62,8 +87,6 @@
     form.classList.remove("was-validated");
   }
 
-  function updateFilesList() {}
-
   function submit() {
     const input = validateForm();
     if (input.isValid) {
@@ -72,6 +95,8 @@
 
     updateFilesList();
   }
+
+  onMount(updateFilesList);
 </script>
 
 <svelte:head>

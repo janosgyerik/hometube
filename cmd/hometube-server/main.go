@@ -145,6 +145,11 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func home(w http.ResponseWriter, r *http.Request) {
+	// TODO bundle the svelte app
+	// TODO serve the single file / template from svelte app
+}
+
 func main() {
 	downloader := hometube.DefaultDownloader()
 	err := downloader.Init()
@@ -162,6 +167,8 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Use(loggingMiddleware)
+	r.HandleFunc("/home", home).Methods(http.MethodGet)
+
 	api := r.PathPrefix("/api/v1").Subrouter()
 	api.HandleFunc("/download", s.download).
 		Methods(http.MethodPost).
