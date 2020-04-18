@@ -127,11 +127,19 @@
 
     <form on:submit|preventDefault={submit} class="needs-validation" novalidate>
       <div class="form-group">
-        <label for="video-url">URL of the video or playlist to download</label>
-        <input type="text" class="form-control" id="videoUrl" required />
-        <div class="invalid-feedback">Please enter URL to download.</div>
+        <div class="input-group mb-3">
+          <input
+            type="text"
+            class="form-control"
+            id="videoUrl"
+            required
+            placeholder="URL of the video or playlist to download" />
+          <div class="input-group-append">
+            <button type="submit" class="btn btn-primary">Download</button>
+          </div>
+          <div class="invalid-feedback">Please enter URL to download.</div>
+        </div>
       </div>
-      <button type="submit" class="btn btn-primary">Download</button>
     </form>
 
   </div>
