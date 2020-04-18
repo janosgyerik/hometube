@@ -10,6 +10,12 @@
 	<link rel='stylesheet' href='/global.css'>
 	<link rel='stylesheet' href='/build/bundle.css'>
 
+	<script>
+		window.apiBaseUrl = '{{.APIBaseURL}}';
+		if (window.apiBaseUrl.startsWith('{')) {
+			window.apiBaseUrl = 'http://localhost:8080/api/v1';
+		}
+	</script>
 	<script defer src='/build/bundle.js'></script>
 </head>
 

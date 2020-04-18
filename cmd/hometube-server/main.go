@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -109,6 +110,11 @@ type server struct {
 	basedir string
 }
 
+// App holds template parameters for rendering the App's pages
+type App struct {
+	APIBaseURL string
+}
+
 func (s *server) download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -160,7 +166,9 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "app/public/index.html")
+	t, _ := template.ParseFiles("app/public/index.html")
+	apiBaseURL := fmt.Sprintf("http://%s/api/v1", r.Host)
+	t.Execute(w, &App{APIBaseURL: apiBaseURL})
 }
 
 func servePublicFile(w http.ResponseWriter, r *http.Request) {

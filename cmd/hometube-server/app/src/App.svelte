@@ -3,7 +3,8 @@
   import { items } from "./stores.js";
   import { onMount } from "svelte";
 
-  export let apiBaseUrl;
+  // configured in index.html
+  const apiBaseUrl = window.apiBaseUrl;
 
   const requests = {
     download: videoUrl => {
