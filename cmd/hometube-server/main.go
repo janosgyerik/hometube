@@ -64,22 +64,21 @@ func parseArgs() params {
 }
 
 type queue struct {
-	items chan *file
+	items chan *item
 }
 
 func newQueue() *queue {
-	return &queue{items: make(chan *file, 1)}
+	return &queue{items: make(chan *item, 1)}
 }
 
 func worker(downloader hometube.Downloader, basedir string, q *queue) {
 	for f := range q.items {
 		log.Printf("worker: processing file: %s", f)
-		target := filepath.Join(basedir, f.Filename)
-		err := downloader.Download(f.URL, target)
+		err := downloader.Download(f.URL, basedir)
 		if err != nil {
-			log.Printf("failed to download %s to %s", f.URL, target)
+			log.Printf("failed to download %s; error: %s", f.URL, err)
 		} else {
-			log.Printf("successfully downloaded %s to %s", f.URL, target)
+			log.Printf("successfully downloaded %s", f.URL)
 		}
 	}
 }
@@ -96,13 +95,13 @@ type message struct {
 	Message string `json:"message"`
 }
 
-type file struct {
-	URL      string `json:"url"`
-	Filename string `json:"filename"`
+type item struct {
+	URL  string `json:"url"`
+	Name string `json:"name"`
 }
 
 type listDownloadedResponse struct {
-	Files []file `json:"files"`
+	Items []item `json:"items"`
 }
 
 type server struct {
@@ -114,11 +113,21 @@ func (s *server) download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	url := r.FormValue("url")
-	filename := r.FormValue("filename")
-	f := &file{URL: url, Filename: filename}
+	f := &item{URL: url}
+	fmt.Printf("adding to q: %s\n", url)
 	s.queue.items <- f
 	w.WriteHeader(http.StatusCreated)
 	writeResponse(w, f)
+}
+
+func formatName(basedir string, fi os.FileInfo) string {
+	if fi.Mode().IsDir() {
+		files, err := ioutil.ReadDir(filepath.Join(basedir, fi.Name()))
+		if err == nil {
+			return fmt.Sprintf("%s (%d files)", fi.Name(), len(files))
+		}
+	}
+	return fi.Name()
 }
 
 func (s *server) listDownloaded(w http.ResponseWriter, r *http.Request) {
@@ -129,11 +138,11 @@ func (s *server) listDownloaded(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	files := make([]file, 0)
-	for _, f := range osFiles {
-		files = append(files, file{Filename: f.Name()})
+	items := make([]item, len(osFiles))
+	for index, f := range osFiles {
+		items[index] = item{Name: formatName(s.basedir, f)}
 	}
-	response := listDownloadedResponse{Files: files}
+	response := listDownloadedResponse{Items: items}
 	w.WriteHeader(http.StatusOK)
 	writeResponse(w, response)
 }
@@ -184,8 +193,7 @@ func main() {
 	api := r.PathPrefix("/api/v1").Subrouter()
 	api.HandleFunc("/download", s.download).
 		Methods(http.MethodPost).
-		Queries("url", "{url}").
-		Queries("filename", "{filename}")
+		Queries("url", "{url}")
 	api.HandleFunc("/list/downloaded", s.listDownloaded).
 		Methods(http.MethodGet)
 

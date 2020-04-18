@@ -5,14 +5,18 @@ package hometube
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"log"
+	"net/url"
 	"os/exec"
+	"path"
 )
 
 // Downloader is a common interface for utilities that download videos, after initialization.
 type Downloader interface {
 	Init() error
-	Download(url, filename string) error
+	Download(url, basedir string) error
 }
 
 // YouTubeDl implements Downloader using youtube-dl
@@ -29,11 +33,54 @@ func (youtubedl *YouTubeDl) Init() error {
 	return err
 }
 
-// Download downloads the specified URL and saves to the specified filename
-func (youtubedl *YouTubeDl) Download(url, filename string) error {
-	log.Printf("downloading %s as %s ...\n", url, filename)
+type parsedURL struct {
+	sanitized    string
+	outputFormat string
+}
 
-	cmd := exec.Command(youtubedl.path, "-o", filename, url)
+func parseURL(s string) (*parsedURL, error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return nil, err
+	}
+
+	m, _ := url.ParseQuery(u.RawQuery)
+
+	listParam, hasListParam := m["list"]
+	videoParam, hasVideoParam := m["v"]
+
+	var param string
+	var id string
+	var outputFormat string
+
+	if hasListParam {
+		param = "list"
+		id = listParam[0]
+		outputFormat = "%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s"
+	} else if hasVideoParam {
+		param = "v"
+		id = videoParam[0]
+		outputFormat = "%(title)s.%(ext)s"
+	} else {
+		return nil, errors.New("url must have v or list param")
+	}
+
+	return &parsedURL{
+		fmt.Sprintf("https://www.youtube.com/watch?%s=%s", param, id),
+		outputFormat,
+	}, nil
+}
+
+// Download fetch the specified URL
+func (youtubedl *YouTubeDl) Download(url, basedir string) error {
+	pu, err := parseURL(url)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("downloading %s ...\n", pu.sanitized)
+
+	cmd := exec.Command(youtubedl.path, "-io", path.Join(basedir, pu.outputFormat), pu.sanitized)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err

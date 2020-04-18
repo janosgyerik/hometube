@@ -10,39 +10,31 @@ import (
 	"github.com/janosgyerik/hometube"
 )
 
-const (
-	// TODO placeholder for constants
-	defaultCount = 5
-)
-
 func exit() {
 	flag.Usage()
 	os.Exit(1)
 }
 
 type params struct {
-	url      string
-	filename string
+	url string
 }
 
 func parseArgs() params {
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [options] url filename\n\n", os.Args[0])
+		fmt.Printf("Usage: %s [options] url\n\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
-	if len(flag.Args()) != 2 {
+	if len(flag.Args()) != 1 {
 		exit()
 	}
 
 	url := flag.Args()[0]
-	filename := flag.Args()[1]
 
 	return params{
-		filename: filename,
-		url:      url,
+		url: url,
 	}
 }
 
@@ -55,7 +47,7 @@ func main() {
 
 	p := parseArgs()
 
-	err = downloader.Download(p.url, p.filename)
+	err = downloader.Download(p.url, ".")
 	if err != nil {
 		log.Fatal(err)
 	}
